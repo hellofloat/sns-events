@@ -1,0 +1,26 @@
+{
+  "name": "sns-events",
+  "version": "0.1.0",
+  "description": "An event system using AWS SNS.",
+  "license": "MIT",
+  "contributors": [ {
+    "name": "Andy Burke",
+    "email": "aburke@bitflood.org",
+    "url": "https://github.com/andyburke"
+  } ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hellofloat/sns-events.git"
+  },
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "async": "^1.4.0",
+    "aws-sdk": "^2.2.21",
+    "es6-shim": "^0.32.2",
+    "jsonwebtoken": "^5.0.4",
+    "xml2js": "^0.4.15"
+  }
+}
