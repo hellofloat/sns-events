@@ -33,7 +33,7 @@ SNSEventEmitter.init = function( options, callback ) {
         // check for config
         function checkConfig( next ) {
             if ( !self.config || !self.config.AWS || !self.config.AWS.accessKeyId || !self.config.AWS.secretAccessKey || !self.config.url || !self.config.secret ) {
-                throw new Error( 'Missing configuration.' );
+                throw new Error( 'Missing configuration, current configuration:\n' + util.inspect( self.config ) );
             }
 
             next();
