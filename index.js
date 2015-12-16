@@ -355,7 +355,7 @@ SNSEventEmitter._onNotification = function( request ) {
     async.series( [
         // verify and decode webtoken
         function( next ) {
-            jwt.verify( token, self.config.secret, function( error, _decoded ) {
+            jwt.verify( token, self.options.secret, function( error, _decoded ) {
                 decoded = _decoded;
                 next( error );
             } );
@@ -401,8 +401,8 @@ SNSEventEmitter.emit = function( eventName, event ) {
             token = jwt.sign( {
                 eventName: eventName,
                 event: event
-            }, self.config.secret, {
-                issuer: self.config.issuer
+            }, self.options.secret, {
+                issuer: self.options.issuer
             } );
             next();
         },
