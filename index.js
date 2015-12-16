@@ -43,8 +43,9 @@ SNSEventEmitter.init = function( options, callback ) {
             next();
         },
 
-        // load AWS credentials
+        // AWS configuration
         function loadAWSCredentials( next ) {
+            AWS.config.correctClockSkew = true; // retry signature expiration errors
             AWS.config.region = self.options.AWS.region;
             AWS.config.accessKeyId = self.options.AWS.accessKeyId;
             AWS.config.secretAccessKey = self.options.AWS.secretAccessKey;

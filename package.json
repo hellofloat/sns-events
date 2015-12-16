@@ -1,6 +1,6 @@
 {
   "name": "sns-events",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "An event system using AWS SNS.",
   "license": "MIT",
   "contributors": [
