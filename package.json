@@ -1,6 +1,6 @@
 {
   "name": "sns-events",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "An event system using AWS SNS.",
   "license": "MIT",
   "contributors": [
@@ -22,6 +22,7 @@
     "async": "^1.4.0",
     "aws-sdk": "^2.2.21",
     "es6-shim": "^0.32.2",
+    "extend": "^3.0.0",
     "jsonwebtoken": "^5.0.4",
     "superagent": "^1.6.1",
     "xml2js": "^0.4.15"

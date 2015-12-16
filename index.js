@@ -5,6 +5,7 @@ var async = require( 'async' );
 var AWS = require( 'aws-sdk' );
 var awsUtils = require( './aws-utils.js' );
 var crypto = require( 'crypto' );
+var extend = require( 'extend' );
 var jwt = require( 'jsonwebtoken' );
 var superagent = require( 'superagent' );
 var util = require( 'util' );
@@ -27,13 +28,16 @@ SNSEventEmitter.init = function( options, callback ) {
 
     self.initializing = true;
 
+    self.options = extend( true, {}, options );
+
     self.listeners = {};
+    self.queue = [];
 
     async.series( [
         // check for config
         function checkConfig( next ) {
-            if ( !self.config || !self.config.AWS || !self.config.AWS.accessKeyId || !self.config.AWS.secretAccessKey || !self.config.url || !self.config.secret ) {
-                throw new Error( 'Missing configuration, current configuration:\n' + util.inspect( self.config ) );
+            if ( !self.options || !self.options.AWS || !self.options.AWS.accessKeyId || !self.options.AWS.secretAccessKey || !self.options.url || !self.options.secret ) {
+                throw new Error( 'Missing Options, current options:\n' + util.inspect( self.options ) );
             }
 
             next();
@@ -41,16 +45,16 @@ SNSEventEmitter.init = function( options, callback ) {
 
         // load AWS credentials
         function loadAWSCredentials( next ) {
-            AWS.config.region = self.config.AWS.region;
-            AWS.config.accessKeyId = self.config.AWS.accessKeyId;
-            AWS.config.secretAccessKey = self.config.AWS.secretAccessKey;
+            AWS.config.region = self.options.AWS.region;
+            AWS.config.accessKeyId = self.options.AWS.accessKeyId;
+            AWS.config.secretAccessKey = self.options.AWS.secretAccessKey;
             next();
         },
 
         // initialize sns
         function initSNS( next ) {
             self.sns = new AWS.SNS( {
-                apiVersion: self.config.AWS && self.config.AWS.SNS ? self.config.AWS.SNS.apiVersion || '2010-03-31' : '2010-03-31'
+                apiVersion: self.options.AWS && self.options.AWS.SNS ? self.options.AWS.SNS.apiVersion || '2010-03-31' : '2010-03-31'
             } );
             next();
         },
@@ -58,7 +62,7 @@ SNSEventEmitter.init = function( options, callback ) {
         // create event topic
         function createEventTopic( next ) {
             self.sns.createTopic( {
-                Name: self.config.topic || 'sns-events'
+                Name: self.options.topic || 'sns-events'
             }, function( error, data ) {
                 if ( error ) {
                     next( error );
@@ -73,8 +77,8 @@ SNSEventEmitter.init = function( options, callback ) {
         // request subscription
         function requestSubscription( next ) {
             self.sns.subscribe( {
-                Endpoint: self.config.url,
-                Protocol: self.config.protocol || 'https',
+                Endpoint: self.options.url,
+                Protocol: self.options.protocol || 'https',
                 TopicArn: self.snsTopic
             }, function( error, data ) {
                 if ( error ) {
@@ -97,7 +101,18 @@ SNSEventEmitter.init = function( options, callback ) {
 
         self.initialized = true;
         callback();
+        self._onInitialized();
     } );
+};
+
+SNSEventEmitter._onInitialized = function() {
+    var self = this;
+
+    var event = self.queue.shift();
+    while( event ) {
+        self.emit( event.eventName, event.event );
+        event = self.queue.shift();
+    }
 };
 
 SNSEventEmitter._verifyMessage = function( request, callback ) {
@@ -369,6 +384,14 @@ SNSEventEmitter._onNotification = function( request ) {
 
 SNSEventEmitter.emit = function( eventName, event ) {
     var self = this;
+
+    if ( !self.initialized ) {
+        self.queue.push( {
+            eventName: eventName,
+            event: event
+        } );
+        return;
+    }
 
     var token = null;
 
