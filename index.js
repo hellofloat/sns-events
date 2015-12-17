@@ -103,6 +103,7 @@ SNSEventEmitter.init = function( options, callback ) {
         self.initialized = true;
         callback();
         self._onInitialized();
+        self._emit( '__initialized' );
     } );
 };
 
@@ -314,7 +315,7 @@ SNSEventEmitter.snsMessageHandler = function( request, response ) {
 
     ], function( error ) {
         if ( error ) {
-            console.error( util.inspect( error ) );
+            self._emit( 'error', error );
             return;
         }
     } );
@@ -329,16 +330,18 @@ SNSEventEmitter._onSubscriptionConfirmation = function( request ) {
         .parse( awsUtils.parseXMLResponse )
         .end( function( error, _response ) {
             if ( error ) {
-                console.error( error );
+                self._emit( 'error', error );
                 return;
             }
 
             if ( typeof _response.body.ConfirmSubscriptionResponse === 'undefined' || typeof _response.body.ConfirmSubscriptionResponse.ConfirmSubscriptionResult === 'undefined' || typeof _response.body.ConfirmSubscriptionResponse.ConfirmSubscriptionResult.SubscriptionArn === 'undefined' ) {
-                console.error( 'Missing subscription ARN in confirmation response!:\n\n ' + _response.text + '\n\n' );
+                error = 'Missing subscription ARN in confirmation response!:\n\n ' + _response.text + '\n\n';
+                self._emit( 'error', error );
                 return;
             }
 
             self.snsSubscription = _response.body.ConfirmSubscriptionResponse.ConfirmSubscriptionResult.SubscriptionArn;
+            self._emit( '__subscribed' );
         } );
 };
 
@@ -346,7 +349,7 @@ SNSEventEmitter._onNotification = function( request ) {
     var self = this;
 
     if ( request.body.Subject !== 'event' ) {
-        console.error( 'Unknown event subject: ' + request.body.Subject );
+        self._emit( 'error', 'Unknown event subject: ' + request.body.Subject );
         return;
     }
 
@@ -367,20 +370,25 @@ SNSEventEmitter._onNotification = function( request ) {
             var eventName = decoded.eventName;
             var event = decoded.event;
 
-            var listeners = self.listeners[ eventName ];
-            if ( listeners && listeners.length > 0 ) {
-                listeners.forEach( function( listener ) {
-                    listener( event );
-                } );
-            }
+            self._emit( eventName, event );
 
             next();
         }
     ], function( error ) {
         if ( error ) {
-            console.error( error );
+            self._emit( 'error', error );
         }
     } );
+};
+
+SNSEventEmitter._emit = function( eventName, event ) {
+    var self = this;
+    var listeners = self.listeners[ eventName ];
+    if ( listeners && listeners.length > 0 ) {
+        listeners.forEach( function( listener ) {
+            listener( event );
+        } );
+    }
 };
 
 SNSEventEmitter.emit = function( eventName, event ) {
@@ -418,7 +426,7 @@ SNSEventEmitter.emit = function( eventName, event ) {
         }
     ], function( error ) {
         if ( error ) {
-            console.error( util.inspect( error ) );
+            self._emit( 'error', error );
         }
     } );
 };
