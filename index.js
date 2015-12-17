@@ -440,7 +440,7 @@ SNSEventEmitter.addListener = SNSEventEmitter.on = function( eventName, callback
 SNSEventEmitter.removeListener = SNSEventEmitter.off = function( eventName, callback ) {
     var self = this;
     self.listeners[ eventName ] = self.listeners[ eventName ] || [];
-    self.listeners[ eventName ] = self.listeners.filter( function( listener ) {
+    self.listeners[ eventName ] = self.listeners[ eventName ].filter( function( listener ) {
         return listener !== callback;
     } );
 };
