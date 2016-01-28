@@ -36,7 +36,7 @@ SNSEventEmitter.init = function( options, callback ) {
     async.series( [
         // check for config
         function checkConfig( next ) {
-            if ( !self.options || !self.options.AWS || !self.options.AWS.accessKeyId || !self.options.AWS.secretAccessKey || !self.options.url || !self.options.secret ) {
+            if ( !self.options || !self.options.url || !self.options.secret ) {
                 throw new Error( 'Missing Options, current options:\n' + util.inspect( self.options ) );
             }
 
@@ -46,9 +46,13 @@ SNSEventEmitter.init = function( options, callback ) {
         // AWS configuration
         function loadAWSCredentials( next ) {
             AWS.config.correctClockSkew = true; // retry signature expiration errors
-            AWS.config.region = self.options.AWS.region;
-            AWS.config.accessKeyId = self.options.AWS.accessKeyId;
-            AWS.config.secretAccessKey = self.options.AWS.secretAccessKey;
+            if ( self.options.AWS ) {
+                for ( var key in self.options.AWS ) {
+                    if ( self.options.AWS.hasOwnProperty( key ) ) {
+                        AWS.config[ key ] = self.options.AWS[ key ];
+                    }
+                }
+            }
             next();
         },
 
