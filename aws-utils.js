@@ -1,8 +1,8 @@
 'use strict';
 
-var xml2js = require( 'xml2js' );
+const xml2js = require( 'xml2js' );
 
-var AWSUtils = module.exports = {};
+let AWSUtils = module.exports = {};
 
 AWSUtils.parseXMLResponse = function parseXMLResponse( response, callback ) {
     response.text = '';

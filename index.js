@@ -1,19 +1,18 @@
 'use strict';
 
-require( 'es6-shim' ); // shim in the good stuff
-var async = require( 'async' );
-var AWS = require( 'aws-sdk' );
-var awsUtils = require( './aws-utils.js' );
-var crypto = require( 'crypto' );
-var extend = require( 'extend' );
-var jwt = require( 'jsonwebtoken' );
-var superagent = require( 'superagent' );
-var util = require( 'util' );
+const async = require( 'async' );
+const AWS = require( 'aws-sdk' );
+const awsUtils = require( './aws-utils.js' );
+const crypto = require( 'crypto' );
+const extend = require( 'extend' );
+const jwt = require( 'jsonwebtoken' );
+const superagent = require( 'superagent' );
+const util = require( 'util' );
 
-var SNSEventEmitter = module.exports = {};
+let SNSEventEmitter = module.exports = {};
 
 SNSEventEmitter.init = function( options, callback ) {
-    var self = this;
+    const self = this;
     callback = callback || function() {};
 
     if ( self.initialized ) {
@@ -47,7 +46,7 @@ SNSEventEmitter.init = function( options, callback ) {
         function loadAWSCredentials( next ) {
             AWS.config.correctClockSkew = true; // retry signature expiration errors
             if ( self.options.AWS ) {
-                for ( var key in self.options.AWS ) {
+                for ( let key in self.options.AWS ) {
                     if ( self.options.AWS.hasOwnProperty( key ) ) {
                         AWS.config[ key ] = self.options.AWS[ key ];
                     }
@@ -112,9 +111,9 @@ SNSEventEmitter.init = function( options, callback ) {
 };
 
 SNSEventEmitter._onInitialized = function() {
-    var self = this;
+    const self = this;
 
-    var event = self.queue.shift();
+    let event = self.queue.shift();
     while( event ) {
         self.emit( event.eventName, event.event );
         event = self.queue.shift();
@@ -122,10 +121,10 @@ SNSEventEmitter._onInitialized = function() {
 };
 
 SNSEventEmitter._verifyMessage = function( request, callback ) {
-    var self = this;
-    var verified = true;
-    var certificate = null;
-    var messageString = '';
+    const self = this;
+    let verified = true;
+    let certificate = null;
+    let messageString = '';
 
     async.series( [
         // check signature version
@@ -171,7 +170,7 @@ SNSEventEmitter._verifyMessage = function( request, callback ) {
         },
 
         function constructMessageString( next ) {
-            var error = null;
+            let error = null;
 
             switch ( request.body.Type ) {
                 case 'Notification':
@@ -209,7 +208,7 @@ SNSEventEmitter._verifyMessage = function( request, callback ) {
         },
 
         function verifySignature( next ) {
-            var verifier = crypto.createVerify( 'RSA-SHA1' );
+            let verifier = crypto.createVerify( 'RSA-SHA1' );
             verifier.update( messageString, 'utf8' );
 
             if ( !verifier.verify( certificate, request.body.Signature, 'base64' ) ) {
@@ -229,15 +228,15 @@ SNSEventEmitter._verifyMessage = function( request, callback ) {
 };
 
 SNSEventEmitter.snsMessageHandler = function( request, response ) {
-    var self = this;
+    const self = this;
 
     // first, respond to SNS that we got the message
     response.send( {
         received: true
     } );
 
-    var messageType = null;
-    var handler = null;
+    let messageType = null;
+    let handler = null;
 
     async.series( [
         function getMessageType( next ) {
@@ -261,7 +260,7 @@ SNSEventEmitter.snsMessageHandler = function( request, response ) {
                 return;
             }
 
-            var needsConversion = [ 'SubscriptionConfirmation', 'UnsubscribeConfirmation', 'Notification' ].some( function( type ) {
+            const needsConversion = [ 'SubscriptionConfirmation', 'UnsubscribeConfirmation', 'Notification' ].some( function( type ) {
                 return request.headers[ 'x-amz-sns-message-type' ] === type;
             } );
 
@@ -326,7 +325,7 @@ SNSEventEmitter.snsMessageHandler = function( request, response ) {
 };
 
 SNSEventEmitter._onSubscriptionConfirmation = function( request ) {
-    var self = this;
+    const self = this;
 
     superagent
         .get( request.body.SubscribeURL )
@@ -350,15 +349,15 @@ SNSEventEmitter._onSubscriptionConfirmation = function( request ) {
 };
 
 SNSEventEmitter._onNotification = function( request ) {
-    var self = this;
+    const self = this;
 
     if ( request.body.Subject !== 'event' ) {
         self._emit( 'error', 'Unknown event subject: ' + request.body.Subject );
         return;
     }
 
-    var token = request.body.Message;
-    var decoded = null;
+    const token = request.body.Message;
+    let decoded = null;
 
     async.series( [
         // verify and decode webtoken
@@ -371,8 +370,8 @@ SNSEventEmitter._onNotification = function( request ) {
 
         // emit the decoded event
         function( next ) {
-            var eventName = decoded.eventName;
-            var event = decoded.event;
+            const eventName = decoded.eventName;
+            const event = decoded.event;
 
             self._emit( eventName, event );
 
@@ -386,8 +385,8 @@ SNSEventEmitter._onNotification = function( request ) {
 };
 
 SNSEventEmitter._emit = function( eventName, event ) {
-    var self = this;
-    var listeners = self.listeners[ eventName ];
+    const self = this;
+    const listeners = self.listeners[ eventName ];
     if ( listeners && listeners.length > 0 ) {
         listeners.forEach( function( listener ) {
             listener( event );
@@ -396,7 +395,7 @@ SNSEventEmitter._emit = function( eventName, event ) {
 };
 
 SNSEventEmitter.emit = function( eventName, event ) {
-    var self = this;
+    const self = this;
 
     if ( !self.initialized ) {
         self.queue.push( {
@@ -406,7 +405,7 @@ SNSEventEmitter.emit = function( eventName, event ) {
         return;
     }
 
-    var token = null;
+    let token = null;
 
     async.series( [
         // create signed token
@@ -436,13 +435,13 @@ SNSEventEmitter.emit = function( eventName, event ) {
 };
 
 SNSEventEmitter.addListener = SNSEventEmitter.on = function( eventName, callback ) {
-    var self = this;
+    const self = this;
     self.listeners[ eventName ] = self.listeners[ eventName ] || [];
     self.listeners[ eventName ].push( callback );
 };
 
 SNSEventEmitter.removeListener = SNSEventEmitter.off = function( eventName, callback ) {
-    var self = this;
+    const self = this;
     self.listeners[ eventName ] = self.listeners[ eventName ] || [];
     self.listeners[ eventName ] = self.listeners[ eventName ].filter( function( listener ) {
         return listener !== callback;
