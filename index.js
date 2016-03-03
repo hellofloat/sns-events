@@ -360,16 +360,27 @@ SNSEventEmitter._onNotification = function( request ) {
     let decoded = null;
 
     async.series( [
-        // verify and decode webtoken
-        function( next ) {
+        function verifyAndDecodeJWT( next ) {
             jwt.verify( token, self.options.secret, function( error, _decoded ) {
                 decoded = _decoded;
                 next( error );
             } );
         },
 
-        // emit the decoded event
-        function( next ) {
+        function logEvent( next ) {
+            if ( !self.options.logEvents ) {
+                next();
+                return;
+            }
+
+            const eventName = decoded.eventName;
+            const event = decoded.event;
+
+            console.log( 'SNS EVENT: ' + eventName + ': ' + JSON.stringify( event, null, 4 ) );
+            next();
+        },
+
+        function emitEvent( next ) {
             const eventName = decoded.eventName;
             const event = decoded.event;
 
